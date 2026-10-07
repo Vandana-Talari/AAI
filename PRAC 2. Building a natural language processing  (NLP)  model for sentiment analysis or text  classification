@@ -1,0 +1,52 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from datasets import load_dataset
+
+
+dataset = load_dataset("imdb")
+
+df = pd.DataFrame({
+    'text': dataset['train']['text'],
+    'label': dataset['train']['label']
+})
+
+
+X_train, X_test, y_train, y_test = train_test_split(
+    df['text'],
+    df['label'],
+    test_size=0.2,
+    random_state=42
+)
+
+
+vectorizer = TfidfVectorizer()
+
+X_train_vectorized = vectorizer.fit_transform(X_train)
+
+model = LogisticRegression(max_iter=1000)
+
+model.fit(X_train_vectorized, y_train)
+
+
+X_test_vectorized = vectorizer.transform(X_test)
+
+predictions = model.predict(X_test_vectorized)
+
+accuracy = accuracy_score(y_test, predictions)
+
+print(f'Accuracy: {accuracy * 100:.2f}%')
+
+
+new_text = ["I did not like this at all."]
+
+new_vectorized = vectorizer.transform(new_text)
+
+prediction = model.predict(new_vectorized)
+
+print(
+    f'Prediction for "{new_text[0]}": '
+    f'{"positive" if prediction[0] == 1 else "negative"}'
+)
