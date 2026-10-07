@@ -1,0 +1,104 @@
+!pip install evalml
+
+
+### Loading The Dataset
+
+# We can also read the dataset from csv
+# then convert to datatable
+
+import evalml
+
+X, y = evalml.demos.load_breast_cancer()
+
+X_train, X_test, y_train, y_test = evalml.preprocessing.split_data(
+    X,
+    y,
+    problem_type='binary'
+)
+
+X_train.head()
+
+
+### Running the AutoML to select the best algorithm
+
+import evalml
+
+evalml.problem_types.ProblemTypes.all_problem_types
+
+from evalml.automl import AutoMLSearch
+
+automl = AutoMLSearch(
+    X_train=X_train,
+    y_train=y_train,
+    problem_type='binary'
+)
+
+automl.search()
+
+automl.rankings
+
+
+### Getting The Best Pipeline
+
+automl.best_pipeline
+
+best_pipeline = automl.best_pipeline
+
+
+### Let's Check the detailed desscription
+
+automl.describe_pipeline(
+    automl.rankings.iloc[0]["id"]
+)
+
+
+### Evaluate on hold out data
+
+best_pipeline.score(
+    X_test,
+    y_test,
+    objectives=["auc", "f1", "Precision", "Recall"]
+)
+
+
+### We can also optimize for a problem specific objective
+
+automl_auc = AutoMLSearch(
+    X_train=X_train,
+    y_train=y_train,
+    problem_type='binary',
+    objective='auc',
+    additional_objectives=['f1', 'precision'],
+    max_batches=1,
+    optimize_thresholds=True
+)
+
+automl_auc.search()
+
+automl_auc.rankings
+
+automl_auc.describe_pipeline(
+    automl_auc.rankings.iloc[0]["id"]
+)
+
+best_pipeline_auc = automl_auc.best_pipeline
+
+
+# get the score on holdout data
+best_pipeline_auc.score(
+    X_test,
+    y_test,
+    objectives=["auc"]
+)
+
+
+best_pipeline.save("model.pkl")
+
+
+#### Loading the Model
+
+check_model = automl.load("model.pkl")
+
+check_model.predict_proba(
+    X_test
+).to_dataframe()
